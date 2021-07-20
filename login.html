@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<title>SART</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+
+<style>
+
+body{background:black; color:white; font-family: Arial; font-size:20pt;}
+
+#content{
+			position:absolute;
+			left:50%; top:10%;
+			margin-left: -300px;  /*half-width/ half-height od 'symbols'*/
+			
+			width:600px;
+			/*border:1px solid red;*/
+}
+
+</style>	
+		
+<script>
+
+var pid;
+
+window.onload =function(){
+	
+	
+	pid = Math.random().toString(36).slice(2,8);
+	
+	console.log(pid);
+	
+	document.getElementById("pid").innerHTML = pid;
+	
+}
+
+window.onkeypress = function(e){
+		
+	if(e.key==" "){
+		
+		if( confirm("You are about to go to the first practice session. Continue?") )
+		window.location.assign("sart_practice.html?pid="+pid);	
+		//window.location.assign("http://localhost:8080/sart_practice.html?pid="+pid);	
+	}			
+}
+
+	
+</script>
+</head>
+<body>
+<div id='pid'></div>
+<div id='content'>
+	
+	This is a login page. Instructions about the overall study goes here.
+	Hit the [space] bar to continue to the practice SART round.
+		
+</div>
+
+</body>
+</html>
