@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<title>Cogito Login B</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+
+<style>
+
+body{background:black; color:white; font-family: Arial; font-size:20pt;}
+
+#content{
+			position:absolute;
+			left:50%; top:10%;
+			margin-left: -300px;  /*half-width/ half-height od 'symbols'*/
+
+			width:600px;
+			/*border:1px solid red;*/
+}
+#pid{opacity:0.5;}
+</style>
+
+<script>
+
+var pid;
+
+window.onload =function(){
+
+
+	pid = Math.random().toString(36).slice(2,8);
+
+	console.log(pid);
+
+	document.getElementById("pid").innerHTML = pid;
+
+}
+
+window.onkeypress = function(e){
+
+	if(e.key==" "){
+
+		//if( confirm("You are about to go to the first practice session. Continue?") )
+		window.location.assign("cogito.html?pid="+pid+"&group=B");
+		//window.location.assign("http://localhost:8080/sart_practice.html?pid="+pid);
+	}
+}
+
+
+</script>
+</head>
+<body>
+<div id='pid'></div>
+<div id='content'>
+
+	<p>Hello! You are about to start a series of cognitive tests.</p>
+
+	<p>The only key you will ever need to press is the <b>spacebar</b>.</p>
+
+	<p> You will have a chance to practice each type of test beforehand. <b>Instructions</b> and a <b>scoreboard</b> will be visible during these practice sessions to help you <i>(they will be hidden during the real test)</i>.</p>
+
+	<p>You can redo the practice tests as many times as you want. But you will have only one go at the real version(s)!</p>
+
+	Hit the [space] bar to continue to the first practice session.
+
+</div>
+
+</body>
+</html>

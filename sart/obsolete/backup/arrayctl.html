@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<title>Array Control (admin)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+
+
+<link rel="stylesheet" href="test.css">
+
+<style>
+	#tog_button{text-align:center; 
+		font-size:20pt; padding:40px; position:relative; left:50%; margin-left:-100px;
+		margin-top:200px; height:160px; width:160px; background:green; 
+		border-radius:160px; cursor:pointer;}
+</style>
+
+<script src="globals.js" type="text/javascript"></script>
+
+<script>
+	
+	var button;
+	
+		window.onload = function(){
+		
+		button = document.getElementById('tog_button');
+		
+	}
+	
+var array_ctl_state = 0;
+
+function arrayToggle(){
+	
+	array_ctl_state = !array_ctl_state;
+	
+	if(array_ctl_state)	
+	{	ajax_rq("array_on.txt"); 
+		button.innerHTML = "<p>ON</p>";
+		button.style.background = "red";
+	}else{
+		ajax_rq("array_off.txt"); 
+		button.innerHTML = "<p>OFF</p>";
+		button.style.background = "green";
+	}
+	
+	
+}
+
+
+</script>
+</head>
+
+<body>
+admin page for array control
+<div id='tog_button' onclick="arrayToggle()">OFF</div>
+
+</body>
+</html>
+

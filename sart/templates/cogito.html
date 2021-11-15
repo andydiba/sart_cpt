@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<title>Cogito</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+
+<!--link rel="stylesheet" href="cogito.css">-->
+<style>
+body{background:black; color:white; font-family: Arial;  overflow:hidden;}
+
+#content{
+			position:absolute;
+			left:50%; top:50%;
+			margin-left: -150px;  /*half-width/ half-height of 'symbols' in displayBx*/
+			margin-top: -150px;
+
+			/*border:1px solid red;*/
+}
+
+#displayBx{
+			position:relative;
+			width:300px;
+			height:300px;
+
+			font-size:60pt;
+
+			line-height: 300px;
+			padding:20px;
+			text-align:center;
+
+			overflow: visible;
+
+		/*image version*/
+			background-repeat:no-repeat;
+			background-size:80% 80%;
+			background-position:center;
+
+
+		/*	border:1px dotted white;*/
+}
+
+
+
+#alertBx{
+			position:fixed;
+			left:25%;
+			top:10%;
+			width:50%;
+			height:50%;
+			border-radius:10px;
+			background:rgba(10,255,123,0.95);
+			color:white;
+			display:none;
+			font-size:22pt;
+			text-align:center;
+			padding:50px;
+			z-index: 289;
+
+	}
+
+
+#symbols{visibility:hidden; }
+
+/*Fonts - Note make all classes equal to overwrite!*/
+.f0 {	font-size:48pt; }
+.f1 {	font-size:72pt; }
+.f2 {	font-size:94pt; }
+.f3 {	font-size:100pt; }
+.f4 {	font-size:120pt; }
+
+
+.circled{border:2px solid white; border-radius:40px; padding:10px;}
+.xed{border:none; padding:10px; };
+
+
+/*Practice instructions/score boards*/
+
+#wheelBx{position:relative; height:400px; width:400px;}
+#scoreBx{position:fixed; top:0;right:0;font-size:16pt; padding:30px 0 0 10px; width:360px;}
+
+#instructionBx
+{
+	font-size:16pt;
+	width:320px; padding:30px;
+	visibility: hidden;
+}
+
+
+#fp,#tp,#fn,#tn,#rt{font-size:30pt;}
+
+</style>
+
+
+<!--<script src="cogito.js" type="text/javascript"></script>-->
+
+<script>
+
+/*meta data*/
+var pid;
+var group;
+
+var DEFAULT_CLR = "white";
+var DEFAULT_BKG = "black";
+
+var MASK = "&#8709;";
+var TIME_DIV = 0.1;
+/*scores*/
+var FP;
+var TP;
+var FN;
+var TN;
+
+/*keeps track of key presses + reaction times+ main timer*/
+var KEY = " ";  /*spacebar*/
+var KEY_EN = false;		/*KEY enabled flag*/
+var KEY_CLICKED = false;
+var hTimer = null;     /*handle to timer*/
+var RT;			/*current reaction time*/
+var RT0;        /*base time; for measuring delta RT*/
+
+/*display box html element*/
+var displayBx;
+var alertBx;
+var instructionBx;
+
+/*
+Describe test sequence here...
+groupings: blocks that should have mutually exclusive STATEs.
+some blocks may share the same BLOCK_ID if they are split by a pause/alert.
+blocks with same ID need not share other parameters
+length of each subarray in groupings === number of possible random STATEs assigned(unless overwritten manually).
+schedule and grouping should always be 2D (array of arrays) regardless
+ */
+var results = [];
+var result=null;
+var cBlock = null;    /*current block*/
+var symbols = null;   /*(randomised) symbol list of current block*/
+var csym = null;			/*current symbol on display*/
+var bcount = 0;      /*schedule index of current block*/
+
+var NUMBERS = ["3.png", "4.png", "5.png", "6.png", "7.png", "8.png", "9.png", "1.png", "2.png"];
+var NUMO = ["3.png"];
+
+var LETTERS = ["c.png","d.png","e.png","f.png","g.png","h.png","i.png","a.png","b.png"];
+var LETO = ["c.png"];
+
+
+var SHAPES = ["star.png","square.png","diamond.png","rectangle.png","triangle.png","oval.png","cross.png","heart.png","pentagon.png"];
+
+var SHAPO = ["square.png","diamond.png","rectangle.png","triangle.png","oval.png","cross.png","heart.png","pentagon.png"];
+
+var CLRS = ["blue.png","red.png","orange.png","yellow.png","white.png","brown.png","pink.png","green.png","purple.png"];
+
+var CLRO = ["red.png","orange.png","yellow.png","white.png","brown.png","pink.png","green.png","purple.png"];
+
+var experiment={
+
+blocks:{
+	pNumeral:{
+		TYPE:"block",
+		DEMO:true,
+		MYSYMBOLS:NUMBERS,
+		OMIT:NUMO,
+		REPS:2,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	pAlpha:{
+		TYPE:"block",
+		DEMO:true,
+		MYSYMBOLS:LETTERS,
+		OMIT:LETO,
+		REPS:2,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	pShape:{
+		TYPE:"block",
+		DEMO:true,
+		MYSYMBOLS:SHAPES,
+		OMIT:SHAPO,
+		REPS:2,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	pClr:{
+		TYPE:"block",
+		DEMO:true,
+		MYSYMBOLS:CLRS,
+		OMIT:CLRO,
+		REPS:2,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	Numeral:{
+		TYPE:"block",
+		DEMO:false,
+		MYSYMBOLS:NUMBERS,
+		OMIT:NUMO,
+		REPS:10,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	Alpha:{
+		TYPE:"block",
+		DEMO:false,
+		MYSYMBOLS:LETTERS,
+		OMIT:LETO,
+		REPS:10,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	Shape:{
+		TYPE:"block",
+		DEMO:false,
+		MYSYMBOLS:SHAPES,
+		OMIT:SHAPO,
+		REPS:10,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	Clr:{
+		TYPE:"block",
+		DEMO:false,
+		MYSYMBOLS:CLRS,
+		OMIT:CLRO,
+		REPS:10,
+		XY_SHIFT_MAX:0,
+		MASK_DURATION:750,
+		SYM_DURATION:250
+	},
+	pAlert:{
+		TYPE:"message",
+		MSG:"A practice test is about to begin.<br><br>Please pay attention to the instructions as the real test won't display them!",
+		N:5
+	},
+	Alert2:{
+		TYPE:"message",
+		MSG:"Test complete. Another test will begin soon...",
+		N:15
+	},
+	Pause1:{
+		TYPE:"message",
+		MSG:"You're 1/3 of way there!<br><br>The test will restart in:",
+		N:30
+	},
+	Pause2:{
+	  TYPE:"message",
+		MSG:"You're 2/3 done. Almost finished!<br><br>The test will restart in:",
+		N:30
+	},
+	Retry:{
+		TYPE:"retry",
+		MSG:"Go again? <br><br>Click the spacebar to retry the <e>practice</e> test.<br><br> Otherwise wait for the countdown to expire and the real test will begin...)",
+		N:20
+	}
+},
+states:['exp','ctl'],
+groupings:[["Numeral","Alpha"],["Shape","Clr"]],
+schedule:[
+	["pAlert","pNumeral","Retry","Numeral","Pause1","Numeral","Pause2","Numeral","Alert2",
+	"pAlert","pAlpha","Retry","Alpha","Pause1","Alpha","Pause2","Alpha","Alert2",
+	"pAlert","pShape","Retry","Shape","Pause1","Shape","Pause2","Shape","Alert2",
+	"pAlert","pClr","Retry","Clr","Pause1","Clr","Pause2","Clr"
+	],
+	["pAlert","pShape","Retry","Shape","Pause1","Shape","Pause2","Shape","Alert2",
+	"pAlert","pClr","Retry","Clr","Pause1","Clr","Pause2","Clr","Alert2",
+	"pAlert","pNumeral","Retry","Numeral","Pause1","Numeral","Pause2","Numeral","Alert2",
+	"pAlert","pAlpha","Retry","Alpha","Pause1","Alpha","Pause2","Alpha"
+	],
+	[
+	"pAlert","pNumeral","Retry","Numeral","Pause1","Numeral","Pause2","Numeral","Alert2",
+	"pAlert","pAlpha","Retry","Alpha","Pause1","Alpha","Pause2","Alpha"
+	],
+	["pAlert","pShape","Retry","Shape","Pause1","Shape","Pause2","Shape","Alert2",
+	"pAlert","pClr","Retry","Clr","Pause1","Clr","Pause2","Clr"
+	]
+]
+}// eof experiment
+
+
+
+//console.log(experiment.blocks[experiment.schedule[1][1]].TYPE);
+
+function countDown(n,elm,next){
+
+	if(n==0){
+
+		elm.innerHTML="";
+		next();
+
+	}else {
+
+		var msg ="";
+		for(var i=0;i<n;i++)
+			msg+=".";
+
+		hTimer = setTimeout(function(){countDown(n-1,elm,next);},1000*TIME_DIV);
+
+		elm.innerHTML=msg;
+	}
+}
+
+/*can this be sent via ajax?*/
+function download(filename, text) {
+    var pom = document.createElement('a');
+    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('download', filename);
+
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        pom.dispatchEvent(event);
+    }
+    else {
+        pom.click();
+    }
+}
+
+
+function upload(pathtoserver, text) {
+
+    var data = text;//encodeURIComponent(text);
+
+   var xhttp = new XMLHttpRequest();
+
+   xhttp.onload = function () {
+      if (xhttp.status == 200) {
+        document.body.style.backgroundColor = "purple";
+      } else {
+        alert('Upload error!');
+      }
+    };
+
+  xhttp.open("POST",pathtoserver, true);
+  xhttp.send(data);
+
+
+}
+
+
+
+
+/*ajax function*/
+function ajax_rq(filename) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+     //do nothing!
+     //document.getElementById("demo").innerHTML = this.responseText;
+    }
+  };
+  xhttp.open("GET", filename, true);
+  xhttp.send();
+}
+function arrayOn(){
+			console.log("ajax: array ON");
+			ajax_rq("array_on.txt");
+}
+function arrayOff(){
+			console.log("ajax: array OFF");
+			ajax_rq("array_off.txt");
+}
+
+
+
+function preloadImages(symbols){
+	console.log('Preloading images...');/*
+	for(var i=0;i<symbols.length;i++)
+	{
+		var img = new Image();
+
+		img.src = symbols[i];
+	}*/
+}
+
+
+function drawSelectionWheel(sym,omits){
+
+	console.log("drawing selection wheel");
+
+//var ctx = document.getElementById('wheelBx').getContext('2d');
+
+
+			var N = sym.length;  //include omits!
+			var O = omits.length;
+			var dTheta = 2*Math.PI /N;
+
+			var elm = document.getElementById('wheelBx');
+			elm.innerHTML="";
+			var R = 160;
+			var C = 200;
+			var sz = 60;
+			var yoffset = 280;
+			var xoffset = 10;
+
+			//draw all of them and go through 1by1, if found in omits remove circle
+
+			for (var i=0;i<N;i++)
+			{
+					var imElm = document.createElement('img');
+
+					var c= xoffset+C+R*Math.cos(dTheta*i);
+					var s= yoffset+C+R*Math.sin(dTheta*i);
+					imElm.src = sym[i];
+					imElm.width = sz;
+					imElm.height = sz;
+					imElm.style.position = "absolute";
+
+					imElm.style.left=c-(sz)+'px';
+					imElm.style.top=s-(sz)+'px';
+
+					var found = omits.find(element => element == sym[i]);
+					if(!found)
+							imElm.className='circled';
+					else {
+						imElm.className='xed';
+					}
+
+			elm.appendChild(imElm);
+		}
+}
+
+function loadBlock(){
+
+				if(result) /*store results from previous block (if any)*/
+				{	result.push({fp:FP,fn:FN,tp:TP,tn:TN});
+					results.push(result);
+				}
+
+				result = null;
+
+			//	var bObj_s = experiment.schedule[0]; //get first entry
+			//	experiment.schedule.shift();   //remove first entry
+
+				var bObj_s = experiment.schedule[bcount];
+				bcount=bcount+1;
+
+				if(bObj_s === undefined){
+					console.log("experiment is over!");
+					setAlert("Finished! Thank you for taking part. Goodbye!",alertBx,null,null);
+					arrayOff();
+					//upload results...
+					
+					var jrst = JSON.stringify(results);
+					
+					download(pid+"_"+group, jrst);
+					
+					upload("uploader.txt",pid+"_"+group+"$"+jrst);
+
+					return 0;
+				}
+
+				cBlock = experiment.blocks[bObj_s];
+				console.log("loaded block:"+bObj_s);
+
+				//preload images... (or use html methods...)
+				//and randomize symbols for display...
+				if(cBlock.TYPE == 'block'){
+					preloadImages(cBlock.MYSYMBOLS);
+
+					if(cBlock.DEMO == false)
+					{
+							result=[];
+
+							var temp = cBlock.OMIT.slice();
+							for(var n=0;n<temp.length;n++)
+									temp[n] = temp[n].replace(/\.[^/.]+$/, ""); //remove file extension
+
+						//	result.push({block:bObj_s,state:cBlock.STATE,omit:cBlock.OMIT});
+								result.push({block:bObj_s,state:cBlock.STATE,omit:temp});
+
+					}
+
+				}else if(cBlock.TYPE == 'message'){
+						console.log("posting a message");
+				}else if(cBlock.TYPE == 'retry'){
+						console.log("asking for retry?");
+				}
+
+				return 1;
+
+}
+
+function runBlock(){
+
+	//clear any alerts
+	setAlert(null,alertBx,null,null);
+
+	//clear any previous feedback
+	clearMask(displayBx);
+
+	//turn off array off (default)
+	arrayOff();
+
+	console.log('running block...');
+		//if type block(demo?) or message,
+	if(cBlock.TYPE=="block")
+	{
+		var i,j;
+		var reps = cBlock.REPS;
+		var nsym = cBlock.MYSYMBOLS.length;
+
+		symbols = new Array();
+		for(i=0;i<reps;i++)
+			for(j=0;j<nsym;j++)
+						symbols.push(j);   // e.g. [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4...]
+
+		console.log("randomizing symbols...")
+		symbols = shuffle(shuffle(shuffle(symbols)));
+
+		//create selection wheel!!!!!!!!!!!!!
+		drawSelectionWheel(cBlock.MYSYMBOLS,cBlock.OMIT);
+
+		reset();  //score, key_en , csym=null etc...
+
+		window.onkeypress = keypress;
+
+		var count=5;
+
+		if(cBlock.DEMO)
+		{ console.log("practice block...instructions visible, results not tracked");
+			instructionBx.style.visibility='visible';
+			count=15;
+
+		}else{ //real test
+			console.log("test block...hiding instructions, tracking results")
+			instructionBx.style.visibility='hidden';
+		}
+
+		//load first symbol...
+		countDown(count,displayBx,displaySymbol);
+		//displaySymbol();
+
+		if(cBlock.STATE=='exp')
+			arrayOn();
+
+
+	}else if(cBlock.TYPE == 'message'){
+		//not interuptable?
+			window.onkeypress = null;
+
+			instructionBx.style.visibility='hidden';
+
+			setAlert(cBlock.MSG,alertBx,cBlock.N,function(){
+						if(loadBlock())
+							runBlock();
+			});
+	}else if(cBlock.TYPE == 'retry'){
+			window.onkeypress = retry_keypress;
+
+			instructionBx.style.visibility='hidden';
+			KEY_EN =false;
+			setAlert(cBlock.MSG,alertBx,cBlock.N,function(){
+						if(loadBlock())
+							runBlock();
+			});
+
+	}
+
+}
+
+
+
+function displayMask(){
+
+			clearImage(displayBx);
+//option for
+				displayBx.style.left = 0;
+				displayBx.style.top = 0;
+	//
+			displayBx.innerHTML = MASK;
+
+			hTimer = setTimeout(displaySymbol,TIME_DIV*(cBlock.MASK_DURATION));
+
+}
+function clearImage(elem){
+	elem.style.backgroundImage = "none";
+}
+function clearMask(elm){
+
+	elm.style.color = DEFAULT_CLR;
+	elm.innerHTML = "";
+}
+
+function displaySymbol(){
+
+	var i,i,k;
+	k  = symbols.pop();//random array index
+
+	logPrevScore(csym); //disabled key clicked
+
+	if(k === undefined){
+				console.log('block complete, no more symbols');
+				if(loadBlock())
+					runBlock();
+	}else{
+
+			csym  =  cBlock.MYSYMBOLS[k];  //an image url...
+			console.log('displaying:'+csym);
+   //optional
+			var rd1 =  Math.random();
+			var rd2 =  Math.random();
+
+			var pos_x = ((rd1-0.5)*cBlock.XY_SHIFT_MAX).toString()+"px";
+			var pos_y = ((rd2-0.5)*cBlock.XY_SHIFT_MAX).toString() +"px";
+			displayBx.style.left = pos_x;
+			displayBx.style.top = pos_y;
+//option end
+			clearMask(displayBx);
+			displayBx.style.backgroundImage = "url('"+csym+"')";
+
+
+			var now = new Date();
+			RT0 = now.getTime();
+			RT = 0;
+
+			hTimer = setTimeout(displayMask,TIME_DIV*(cBlock.SYM_DURATION));
+			KEY_EN = true;
+
+	}
+
+}
+function logPrevScore(s){
+	if(s!=null)
+	{
+		var Sym = s.replace(/\.[^/.]+$/, "");
+		//log scores/ reaction times etc... RT,symbol etc...
+		console.log("RT: "+RT+",sym: "+Sym);
+		//strip file extension?
+
+		if(cBlock.DEMO==false && result!=null)
+			result.push({rt:RT,sym:Sym});
+
+	
+		if(!KEY_CLICKED)  //or use RT as an indicator
+			updateScores(s);
+		
+	}
+
+	KEY_EN = false;
+	KEY_CLICKED = false; //reset anyways
+}
+
+function updateScores(s){
+
+	document.getElementById("rt").innerHTML=RT;
+
+	if(cBlock.OMIT.includes(s)) //should not have clicked!
+	{
+		if(KEY_CLICKED)  //wrong FP
+		{
+			FP++;
+			document.getElementById("fp").innerHTML = FP;
+			return false;
+		}else{ //correct   TN
+			TN++;
+			document.getElementById("tn").innerHTML = TN;
+			return true;
+		}
+
+	}else{ //should have clicked!
+
+		if(KEY_CLICKED)  //correct  TP
+		{
+			TP++;
+			document.getElementById("tp").innerHTML = TP;
+			return true;
+		}else{ //wrong  FN
+			FN++;
+			document.getElementById("fn").innerHTML = FN;
+			return false;
+		}
+
+	}
+}
+
+function feedback(s){
+
+		if(updateScores(s))
+				displayBx.style.color = 'green';
+		else
+			displayBx.style.color = 'red';
+
+}
+
+function reset(){
+
+	FP=0;
+	FN=0;
+	TP=0;
+	TN=0;
+	RT=0;
+
+	document.getElementById("rt").innerHTML = RT;
+	document.getElementById("fp").innerHTML = FP;
+	document.getElementById("tp").innerHTML = TP;
+	document.getElementById("fn").innerHTML = FN;
+	document.getElementById("tn").innerHTML = TN;
+
+	csym = null;
+
+
+}
+
+function setAlert(msg,elm,n,action){
+/*
+-setting msg, elm, action to null clears it
+-null action results in static message after (optional)count
+*/
+	if(n==null && action==null)
+	{
+		if(msg!=null){
+			elm.innerHTML = msg;
+			elm.style.display = 'block';
+		}else{
+			elm.innerHTML = "";
+			elm.style.display = 'none';
+		}
+	}else{  //countdown to action
+
+		if(n>0)
+		{
+			elm.style.display = 'block';
+			elm.innerHTML = msg+"<p style='font-size:60pt'>"+n.toString()+"</p>";
+
+			hTimer=setTimeout(function(){setAlert(msg,elm,n-1,action);},TIME_DIV*1000);
+
+		}else{
+			if(action!=null)
+			action();
+		}
+	}
+}
+
+
+
+
+function keypress(e){
+
+	if(e.key==KEY){
+
+		if(!KEY_EN && !hTimer)  /*test hasn't started yet, nothing is happening hTimer will never be non-null again*/
+		{
+			console.log("beginning experiment...");
+			if(loadBlock())
+				runBlock();
+				//countDown(5,displayBx,runBlock);
+		}else if(KEY_EN && hTimer){ // a timer is running..
+
+			//check between 'block' or 'message'=cancellable?
+			KEY_EN = false; //only count 1 click!
+			KEY_CLICKED = true;
+
+			var now = new Date();
+			RT = now.getTime()-RT0;  //KEY_EN and RT0 reset in loadSymbol function
+
+		//	console.log(RT);
+			feedback(csym);
+		}
+
+	}else if( (e.key=="q" || e.key=="Q")  && hTimer){
+
+		clearTimeout(hTimer);
+		result=null;//don't count any results from this test
+		//change display? add resume pathway?
+		runBlock();  //re-run current block
+
+
+		console.log("aborting test or just pausing or restarting?");
+	}
+
+}
+
+
+function retry_keypress(e){
+
+	if(e.key==KEY && hTimer &&  !KEY_EN){
+			KEY_EN=true;  //switch on after 1 keypress
+	}else	if(e.key==KEY && hTimer && KEY_EN){
+
+		KEY_EN = false; //prevents multiple clicks
+		clearTimeout(hTimer);
+		result=null;//don't count any results from this test
+		//change display? add resume pathway?
+		bcount=bcount-2;
+		if(loadBlock())
+			runBlock();
+
+		console.log("restart last test (go back 2)");
+	}
+
+}
+
+
+
+
+/**
+ * Shuffles array in place.
+ * @param {Array} a items An array containing the items.
+ */
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+    }
+    return a;
+}
+
+
+
+
+function setupExp(){
+
+	var i,j;
+	var groups = experiment.groupings;
+  var states = experiment.states.slice();
+  var blocks = experiment.blocks;
+
+	for(i=0; i<groups.length;i++)
+	{		//randomise states here
+			states = shuffle(states);
+
+		for(j=0;j<states.length;j++)
+		{
+			var bObj = blocks[groups[i][j]];
+
+			if(bObj.TYPE == "block" && bObj.DEMO == false && bObj.STATE===undefined)
+				bObj.STATE=states[j];
+
+		}
+	}
+}
+
+
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+function allocateGroup(urlp){
+
+	group = urlp.group;
+		console.log(group);
+
+		//select schedule (may need to modify if parameters of experiment change)
+		if(experiment.schedule.length>1)
+		{
+
+			if(group=='A'){
+					experiment.schedule = experiment.schedule[0];
+			}else if (group=='B'){
+					experiment.schedule = experiment.schedule[1];
+			}else if (group=='AN'){
+					experiment.schedule = experiment.schedule[2];
+			}else{ //SC shape color
+					experiment.schedule = experiment.schedule[3];
+			}
+		}
+}
+
+window.onload = function(){
+
+	arrayOff();
+
+	displayBx = document.getElementById('displayBx');
+	alertBx = document.getElementById('alertBx');
+	instructionBx = document.getElementById('instructionBx');
+
+  var urlp = getUrlVars();
+
+	if(Object.entries(urlp).length === 0 )
+	{	alert("something went wrong, you shouldn't be here without a pid!");
+		return;
+	}
+
+	pid = urlp.pid;
+		console.log(pid);
+
+  allocateGroup(urlp);
+
+	setupExp();
+
+	window.onkeypress = keypress;
+
+	results.push({pid:pid,group:group,date:new Date(),meta:experiment,schedule:experiment.schedule});  //..slice()
+	results.push({spacer:"skip"});
+
+}
+
+
+
+
+</script>
+</head>
+
+<body>
+
+<div id="alertBx"></div>
+
+<div id='feedbackBx'></div>
+
+<div id='instructionBx'>
+	<h2>Instructions:</h2>
+	<p>Click only on the <em>circled</em> items (ignore all the others!)</p>
+	<div id='wheelBx'></div>
+
+	<div id='scoreBx'>
+		<h2>Scoreboard</h2>
+
+		<p style='color:cyan'>Reaction Time (ms):<span id='rt'></span></p>
+		<p style='color:red'>Wrongly Clicked:<span id='fp'></span></p>
+		<p style='color:red'>Wrongly Ignored:<span id='fn'></span></p>
+		<p style='color:green'>Correctly Clicked:<span id='tp'></span></p>
+		<p style='color:green'>Correctly Ignored:<span id='tn'></span></p>
+
+	</div>
+</div>
+
+<div id='content'>
+	<div id='displayBx'> </div>
+</div>
+
+<div id='symbols'>
+<img src="1.png"/><img src="2.png"/><img src="3.png"/>
+<img src="4.png"/><img src="5.png"/><img src="6.png"/>
+<img src="7.png"/><img src="8.png"/><img src="9.png"/>
+
+<img src="a.png"/><img src="b.png"/><img src="c.png"/>
+<img src="d.png"/><img src="e.png"/><img src="f.png"/>
+<img src="g.png"/><img src="h.png"/><img src="i.png"/>
+
+
+<img src="oval.png"/><img src="square.png"/><img src="triangle.png"/>
+<img src="rectangle.png"/><img src="star.png"/><img src="cross.png"/>
+<img src="diamond.png"/><img src="heart.png"/><img src="pentagon.png"/>
+
+
+<img src="red.png"/><img src="blue.png"/><img src="green.png"/>
+<img src="brown.png"/><img src="pink.png"/><img src="yellow.png"/>
+<img src="orange.png"/><img src="white.png"/><img src="purple.png"/>
+
+</div>
+
+</body>
+</html>

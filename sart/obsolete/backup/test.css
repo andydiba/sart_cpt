@@ -1,0 +1,76 @@
+body{background:black; color:white; font-family: Arial;}
+
+#content{
+			position:absolute;
+			left:50%; top:50%;
+			margin-left: -150px;  /*half-width/ half-height of 'symbols' in displayBx*/
+			margin-top: -150px;
+					
+			/*border:1px solid red;*/
+}
+
+#displayBx{
+			position:relative;			
+			width:300px;
+			height:300px;
+		
+		
+
+			line-height: 300px;
+			padding:20px;
+			text-align:center;
+			
+			overflow: visible;
+		
+		/*image version*/
+			background-repeat:no-repeat;
+			background-size:60% 60%;
+			background-position:center;
+			
+		
+			/*border:1px dotted white;*/
+}
+
+
+
+#alertBx{
+			position:fixed;
+			left:25%;
+			top:10%;
+			width:50%;
+			height:50%;
+			border-radius:10px;
+			background:rgba(10,255,123,0.95);
+			color:white;
+			display:none;
+			font-size:22pt;
+			text-align:center;
+			padding:50px;
+			z-index: 289;
+			
+	}
+
+
+/*Fonts - Note make all classes equal to overwrite!*/
+.f0 {	font-size:48pt; }
+.f1 {	font-size:72pt; }
+.f2 {	font-size:94pt; }
+.f3 {	font-size:100pt; }
+.f4 {	font-size:120pt; }
+
+
+
+
+
+/*Practice instructions/score boards*/
+
+#instructions{font-size:16pt;width:360px; padding:10px; display:none;}	
+
+#omit{font-size:40pt;}
+
+.omit{height:50px; width:50px; position:relative; /*border:1px solid white;*/
+background-size:100% 100%;background-repeat:no-repeat; }
+	
+#score{position:fixed; top:0;right:0;font-size:16pt; padding:30px 0 0 10px; width:360px;}
+
+#fp,#tp,#fn,#tn,#rt{font-size:30pt;}

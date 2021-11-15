@@ -1,0 +1,15 @@
+[Unit]
+Description=SART autostart service
+
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/pi/Documents/sart/web
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
